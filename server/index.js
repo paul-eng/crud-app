@@ -27,22 +27,22 @@ if (!isDev && cluster.isMaster) {
   app.use(express.static(path.resolve(__dirname, "../react-ui/build")));
 
   // Answer API requests.
-  app.get("/api", function (req, res) {
+  app.get("/api", (req, res) => {
     res.set("Content-Type", "application/json");
     res.send('{"message":"Hello from the custom server!"}');
   });
 
   // All remaining requests return the React app, so it can handle routing.
-  app.get("*", function (request, response) {
+  app.get("*", (request, response) => {
     response.sendFile(
       path.resolve(__dirname, "../react-ui/build", "index.html")
     );
   });
 
-  app.listen(PORT, function () {
+  app.listen(PORT, () => {
     console.error(
       `Node ${
-        isDev ? "dev server" : "cluster worker " + process.pid
+        isDev ? "dev server" : `cluster worker ${process.pid}`
       }: listening on port ${PORT}`
     );
   });
