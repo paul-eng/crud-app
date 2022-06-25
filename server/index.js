@@ -1,17 +1,24 @@
-const express = require("express");
-const path = require("path");
-const cluster = require("cluster");
-const numCPUs = require("os").cpus().length;
+import express from "express";
+import path from "path";
+import cluster from "cluster";
+import os from "os";
+import { fileURLToPath } from "url";
+import router from "./routes/router.js";
+import "dotenv/config";
 
-const isDev = process.env.NODE_ENV !== "production";
-const PORT = process.env.PORT || 5000;
+const filename = fileURLToPath(import.meta.url);
+const dirname = path.dirname(filename);
+const numCPUs = os.cpus().length;
+
+const { PORT, NODE_ENV } = process.env;
+const isDev = NODE_ENV !== "production";
 
 // Multi-process to utilize all CPU cores.
-if (!isDev && cluster.isMaster) {
+if (!isDev && cluster.isPrimary) {
   console.error(`Node cluster master ${process.pid} is running`);
 
   // Fork workers.
-  for (let i = 0; i < numCPUs; i++) {
+  for (let i = 0; i < numCPUs; i += 1) {
     cluster.fork();
   }
 
@@ -24,19 +31,14 @@ if (!isDev && cluster.isMaster) {
   const app = express();
 
   // Priority serve any static files.
-  app.use(express.static(path.resolve(__dirname, "../react-ui/build")));
+  app.use(express.static(path.resolve(dirname, "../react-ui/build")));
 
   // Answer API requests.
-  app.get("/api", (req, res) => {
-    res.set("Content-Type", "application/json");
-    res.send('{"message":"Hello from the custom server!"}');
-  });
+  app.use("/api", router);
 
   // All remaining requests return the React app, so it can handle routing.
   app.get("*", (request, response) => {
-    response.sendFile(
-      path.resolve(__dirname, "../react-ui/build", "index.html")
-    );
+    response.sendFile(path.resolve(dirname, "../react-ui/build", "index.html"));
   });
 
   app.listen(PORT, () => {
